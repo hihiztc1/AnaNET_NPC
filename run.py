@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 
 def main():
-    # 小时数据集
+    # Different datasets
     MD_SubDataset = ['MD_manu', 'MD_food', 'MD_phar']
     ETTm_SubDataset = ['ETTm_MIX.csv']
 
