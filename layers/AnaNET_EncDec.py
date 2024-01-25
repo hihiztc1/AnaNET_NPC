@@ -2,14 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-import time
-from layers.vmdpy import VMD
-from layers.mvmd_python import mvmd
-import cupy as cp
-import numpy as np
-from cupy import fromDlpack
-from torch.utils.dlpack import to_dlpack, from_dlpack
-
+from layers.mvmd_torch import mvmd
 
 class my_Layernorm(nn.Module):
     """
@@ -46,142 +39,24 @@ class moving_avg(nn.Module):
         return x
 
 
-class VMD_block(nn.Module):
-    def __init__(self, K, alpha):
-        super(VMD_block, self).__init__()
+class FD_block(nn.Module):
+
+    """
+    Series decomposition block
+    """
+    def __init__(self,alpha):
+        super(FD_block, self).__init__()
         self.alpha = alpha
         self.tau = 0
-        self.K = K
+        self.K = 2
         self.DC = 0
         self.init = 1
         self.tol = 5e-5
         self.max_N = 5
 
-    # def forward(self, x):
-    #     # cp
-    #     d_f = x.shape[0]
-    #     x_sh = cp.zeros([x.shape[0], x.shape[1], x.shape[2]], dtype=cp.float)
-    #     x_sl = cp.zeros([x.shape[0], x.shape[1], x.shape[2]], dtype=cp.float)
-    #
-    #     x_numpy = fromDlpack(to_dlpack(x))  # x_numpy:[32,96,512]
-    #
-    #     i = 0
-    #     while i < d_f:
-    #         d = i + 16
-    #         if d > d_f:
-    #             d = i + (d_f - i)
-    #
-    #         x_i = x_numpy[i:d, :, :]
-    #
-    #         result, _, _ = VMD(x_i, self.alpha, self.tau, self.K, self.DC, self.init, self.tol)
-    #
-    #         x_h = result[1, :]
-    #         x_l = result[0, :]
-    #         x_h = (x_h.reshape((d - i, x.shape[1], x.shape[-1]))).astype(cp.float)
-    #         x_l = (x_l.reshape((d - i, x.shape[1], x.shape[-1]))).astype(cp.float)
-    #         x_sh[i:d, :, :] = x_h
-    #         x_sl[i:d, :, :] = x_l
-    #         i = d
-    #
-    #     x_h = (from_dlpack(x_sh.toDlpack())).to('cuda:0').float()
-    #     x_l = (from_dlpack(x_sl.toDlpack())).to('cuda:0').float()
-    #     return x_h , x_l
-
-    # def forward(self, x):
-    #     d_f = x.shape[0]
-    #     x_sh = cp.zeros([x.shape[0], x.shape[1], x.shape[2]], dtype=cp.float32)
-    #     x_sl = cp.zeros([x.shape[0], x.shape[1], x.shape[2]], dtype=cp.float32)
-    #
-    #     # 直接使用 CuPy 操作，避免不必要的来回转换
-    #     x_cp = fromDlpack(to_dlpack(x))
-    #
-    #     now = time.time()
-    #     for i in range(0, d_f, 32):
-    #         d = min(i + 32, d_f)
-    #         x_i = x_cp[i:d, :, :]
-    #
-    #         # 假设 VMD 函数可以直接处理 CuPy 数组
-    #         result, _, _ = VMD(x_i, self.alpha, self.tau, self.K, self.DC, self.init, self.tol)
-    #
-    #         x_h = result[1, :].reshape((d - i, x.shape[1], x.shape[-1]))
-    #         x_l = result[0, :].reshape((d - i, x.shape[1], x.shape[-1]))
-    #
-    #         x_sh[i:d, :, :] = x_h
-    #         x_sl[i:d, :, :] = x_l
-    #     # 一次的时间
-    #     for_time = time.time() - now
-    #     print(for_time)
-    #     # 转换回 PyTorch Tensor
-    #     x_h = from_dlpack(x_sh.toDlpack()).to('cuda:0')
-    #     x_l = from_dlpack(x_sl.toDlpack()).to('cuda:0')
-    #     print("t_x_l", x_l.dtype)
-    #     print("t_x_h", x_h.dtype)
-    #     return x_h, x_l
-
-    # def forward1(self, x):
-    #     d_f = x.shape[0]
-    #     x_sh = np.zeros([x.shape[0], x.shape[1], x.shape[2]], dtype=np.float)
-    #     x_sl = np.zeros([x.shape[0], x.shape[1], x.shape[2]], dtype=np.float)
-    #
-    #     x_numpy = np.array(x)  # x_numpy:[32,96,512]
-    #
-    #     i = 0
-    #     while i < d_f:
-    #         d = i + 16
-    #         if d > d_f:
-    #             d = i + (d_f - i)
-    #
-    #         x_i = x_numpy[i:d, :, :]
-    #
-    #         result, _, _ = VMD(x_i, self.alpha, self.tau, self.K, self.DC, self.init, self.tol)
-    #
-    #         x_h = result[1, :]
-    #         x_l = result[0, :]
-    #         x_h = (x_h.reshape((d - i, x.shape[1], x.shape[-1]))).astype(np.float)
-    #         x_l = (x_l.reshape((d - i, x.shape[1], x.shape[-1]))).astype(np.float)
-    #         x_sh[i:d, :, :] = x_h.get()
-    #         x_sl[i:d, :, :] = x_l.get()
-    #         i = d
-    #
-    #     return torch.tensor(x_sh), torch.tensor(x_sl)
-
-    # def forward(self, x):
-    #
-    #     # 直接使用 CuPy 操作，避免不必要的来回转换
-    #     x_cp = fromDlpack(to_dlpack(x))
-    #
-    #     # 假设 VMD 函数可以直接处理 CuPy 数组
-    #     result, _, _ = mvmd(x_cp, self.alpha, self.tau, self.K, self.DC, self.init, self.tol,self.max_N)
-    #
-    #     x_l = result[0, :].reshape((x.shape[0], x.shape[1], x.shape[-1]))
-    #     x_h = x_cp - x_l
-    #
-    #     # 转换回 PyTorch Tensor
-    #     x_h = from_dlpack(x_h.toDlpack()).to('cuda:0', dtype=torch.float32)
-    #     x_l = from_dlpack(x_l.toDlpack()).to('cuda:0', dtype=torch.float32)
-    #
-    #     return x_h, x_l
-
-    # # 使用mvmd的方案
-    # def forward(self, x):
-    #     with torch.no_grad():
-    #         x_l = torch.zeros_like(x)
-    #         for i in range(x.shape[0]):
-    #             x_i = x[i,:,:]
-    #             x_i = x_i.permute(1,0)
-    #
-    #             # 假设 VMD 函数可以直接处理 CuPy 数组
-    #             result = mvmd(x_i, self.alpha, self.tau, self.K, self.DC, self.init, self.tol,self.max_N)
-    #             x_l_i = result[0, :, :]
-    #             x_l[i,:,:] = x_l_i
-    #
-    #         x_h = x - x_l
-    #     return x_h, x_l
-
-    # 尝试加速的方案
     def forward(self, x):
         with torch.no_grad():
-            x_permuted = x.permute(0, 2, 1)  # 将维度交换以匹配预期的形状
+            x_permuted = x.permute(0, 2, 1)
             x_reshaped = x_permuted.reshape(-1, x.shape[1])
 
             result = mvmd(x_reshaped, self.alpha, self.tau, self.K, self.DC, self.init, self.tol, self.max_N)
@@ -214,22 +89,13 @@ class EncoderLayer(nn.Module):
     AnaNET encoder
     """
 
-    def __init__(self, attention, d_model, fd_method, fd_K, alpha, d_ff=None, dropout=0.1, activation="relu", size=24):
+    def __init__(self, attention, d_model, alpha, d_ff=None, dropout=0.1, activation="relu"):
         super(EncoderLayer, self).__init__()
         d_ff = d_ff or 4 * d_model
         self.attention = attention
 
-        # Decomp
-        if fd_method == 'MA':
-            self.decomp1 = series_decomp(size)
-            self.decomp2 = series_decomp(size)
-        elif fd_method == 'VMD':
-            self.decomp1 = VMD_block(fd_K, alpha)
-            self.decomp2 = VMD_block(fd_K, alpha)
-            # self.decomp1 = series_decomp(size)
-            # self.decomp2 = series_decomp(size)
-        else:
-            raise ValueError("fd_method not in ['MA', 'VMD']")
+        self.decomp1 = FD_block(alpha)
+        self.decomp2 = FD_block(alpha)
 
         self.dropout = nn.Dropout(dropout)
         self.activation = F.relu if activation == "relu" else F.gelu
@@ -282,10 +148,10 @@ class Encoder(nn.Module):
 
 class DecoderLayer(nn.Module):
     """
-    AnaNET decoder Layer with AFA and FD
+    AnaNET decoder Layer
     """
 
-    def __init__(self, self_attention, cross_attention, d_model, c_out, fd_method, fd_K, alpha, d_ff=None,
+    def __init__(self, self_attention, cross_attention, d_model, c_out, alpha, d_ff=None,
                  dropout=0.1, activation="relu", size=24):
         super(DecoderLayer, self).__init__()
         d_ff = d_ff or 4 * d_model
@@ -293,16 +159,8 @@ class DecoderLayer(nn.Module):
         self.cross_attention = cross_attention
 
         # Decomp
-        if fd_method == 'MA':
-            self.decomp1 = series_decomp(size)
-            self.decomp2 = series_decomp(size)
-        elif fd_method == 'VMD':
-            # self.decomp1 = VMD_block(fd_K, alpha)
-            self.decomp2 = VMD_block(fd_K, alpha)
-            self.decomp1 = series_decomp(size)
-            # self.decomp2 = series_decomp(size)
-        else:
-            raise ValueError("fd_method not in ['MA', 'VMD']")
+        self.decomp2 = FD_block(alpha)
+        self.decomp1 = series_decomp(size)
 
         self.dropout = nn.Dropout(dropout)
 

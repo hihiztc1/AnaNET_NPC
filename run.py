@@ -12,9 +12,8 @@ warnings.filterwarnings("ignore")
 
 def main():
     # 小时数据集
-    MD_SubDataset = ['MD_manu', 'MD_food', 'MD_phar','ECL']
+    MD_SubDataset = ['MD_manu', 'MD_food', 'MD_phar']
     ETTm_SubDataset = ['ETTm_MIX.csv']
-
 
 
     # seed
@@ -23,10 +22,9 @@ def main():
     torch.manual_seed(fix_seed)
     np.random.seed(fix_seed)
 
-    parser = argparse.ArgumentParser(description='AnaNET: Anatomical Network For Long-term Time Series Forecasting in '
-                                                 'Multi-Layered Architecture')
+    parser = argparse.ArgumentParser(description='AnaNET: Anatomical Network')
 
-    ## 选择要训练的对应的类别数据集，分为小时与分钟类别
+    ## Select the dataset to train
     parser.add_argument('--dataset_class', type=str, default='MD', help='Data class for evaluation')
     parser.add_argument('--root_path', type=str, default='./dataset/', help='root path of the data file')
 
@@ -43,7 +41,7 @@ def main():
                         help='time features encoding, options:[timeF, fixed, learned]')
 
     # Forecasting settings
-    parser.add_argument('--freq', type=str, default='h',
+    parser.add_argument('--freq', type=str, default='t',
                         help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, '
                              'b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task following by Informer')
@@ -66,8 +64,6 @@ def main():
     parser.add_argument('--activation', type=str, default='gelu', help='activation')
     parser.add_argument('--e_layers', type=int, default=1, help='num of encoder layers')
     parser.add_argument('--d_layers', type=int, default=1, help='num of decoder layers')
-    parser.add_argument('--fd_method', type=str, default='VMD', help='Frequency division method, choose from ["MA", "VMD"]')
-    parser.add_argument('--K', type=int, default=2, help='VMD used')
     parser.add_argument('--alpha', type=int, default=100, help='VMD used')
 
     # Optimization
@@ -111,8 +107,7 @@ def main():
             args.data = item
             metrics_df = pd.DataFrame()
             for ii in range(args.itr):
-                # current_setting = '{}_on|{}-{}|_seq|{}-{}-{}|_freq|{}|_{}_{}_{}_{}_{}'.format(
-                current_setting = '{}_on_{}-{}__seq_{}-{}-{}__freq_{}__{}_{}_{}_{}_{}'.format(
+                current_setting = '{}_on_{}-{}__seq_{}-{}-{}__freq_{}__{}_{}_{}'.format(
                     args.model,
                     current_dataset,
                     item,
@@ -122,8 +117,6 @@ def main():
                     args.freq,
                     args.target,
                     ii,
-                    args.fd_method,
-                    args.K,
                     args.alpha
                 )
 
@@ -159,13 +152,11 @@ def main():
 
             if args.do_predict:
                 print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(current_setting))
-                # 进行预测，保存预测结果至/result/$current_setting文件夹下
+                #Make predictions and save the predicted results to/result/$current_ Under the settings folder
                 score.predict(current_setting, True)
-                # 绘制预测效果图，保存预测结果至/result/$current_setting文件夹下
                 score.draw(current_setting)
         print('####  task finish    ##########')
 
-    # 不进行训练,直接进行验证
     else:
         current_dataset = args.dataset_class
         args.current_dataset = current_dataset
@@ -174,8 +165,7 @@ def main():
         for index, item in enumerate(subdataset):
             args.data = item
             for ii in range(args.itr):
-                # current_setting = '{}_on|{}-{}|_seq|{}-{}-{}|_freq|{}|_{}_{}_{}_{}_{}'.format(
-                current_setting = '{}_on_{}-{}__seq_{}-{}-{}__freq_{}__{}_{}_{}_{}_{}'.format(
+                current_setting = '{}_on_{}-{}__seq_{}-{}-{}__freq_{}_{}_{}_{}'.format(
                     args.model,
                     current_dataset,
                     item,
@@ -185,19 +175,14 @@ def main():
                     args.freq,
                     args.target,
                     ii,
-                    args.fd_method,
-                    args.K,
                     args.alpha
                 )
                 score = Score(args, current_dataset, item)
 
-                # print('####  start testing : {}##########'.format(current_setting))
-                # metrics_dict = score.test(current_setting)
                 if args.do_predict:
                     print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(current_setting))
-                    # 进行预测，保存预测结果至/result/$current_setting文件夹下
+
                     score.predict(current_setting, True)
-                    # 绘制预测效果图，保存预测结果至/result/$current_setting文件夹下
                     score.draw(current_setting)
 
         print('####  task finish    ##########')

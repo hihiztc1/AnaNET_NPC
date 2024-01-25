@@ -82,13 +82,11 @@ class Attention(nn.Module):
         return self.out_projection(out), attn
 
 class FrequencyAdaptiveAttention(nn.Module):
-    # 1.2
     def __init__(self, in_channels, out_channels, seq_len, modes, topindex, sign):
         super(FrequencyAdaptiveAttention, self).__init__()
 
         self.topk = min(modes, seq_len // 2)
         self.topindex = topindex
-        # 设置标志 为了固化index
         self.sign = sign
         self.scale = (1 / (in_channels * out_channels))
         self.weights1 = nn.Parameter(
@@ -99,8 +97,6 @@ class FrequencyAdaptiveAttention(nn.Module):
         # (batch, in_channel, x ), (in_channel, out_channel, x) -> (batch, out_channel, x)
         return torch.einsum("bhi,hio->bho", input, weights)
 
-
-    # 1.2
     def forward(self, q, k, v, index, mask):
         # size = [B, L, H, E]
         B, L, H, E = q.shape
@@ -124,7 +120,6 @@ class FrequencyAdaptiveAttention(nn.Module):
 
 
 class AlignmentFrequencyAttention(nn.Module):
-    # 1.2
     def __init__(self, in_channels, out_channels, seq_len_q, seq_len_kv, topkindex,topqindex,qsign,ksign, modes=64,
                  activation='tanh', policy=0):
         super(AlignmentFrequencyAttention, self).__init__()
@@ -148,8 +143,6 @@ class AlignmentFrequencyAttention(nn.Module):
         # (batch, in_channel, x ), (in_channel, out_channel, x) -> (batch, out_channel, x)
         return torch.einsum("bhi,hio->bho", input, weights)
 
-
-    # 1.2
     def forward(self, q, k, v,indexq,indexk, mask):
         # size = [B, L, H, E]
         B, L, H, E = q.shape
