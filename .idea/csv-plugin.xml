@@ -10,13 +10,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\dataset\ETTm2.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\dataset\ETTm_MIX.csv">
           <value>
             <Attribute>
@@ -24,42 +17,7 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\dataset\MD_food_modified.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\dataset\MD_food_pre.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value=":" />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\dataset\MD_manu_modified.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\dataset\MD_phar_plus.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\dataset\MD_phar_plus_modified.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\dataset\app_a.csv">
+        <entry key="\dataset\MD_phar.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
