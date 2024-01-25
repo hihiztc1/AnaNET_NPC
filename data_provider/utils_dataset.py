@@ -44,6 +44,4 @@ def file_name(url: str) -> str:
     return url.split('/')[-1] if len(url) > 0 else ''
 
 if __name__ == '__main__':
-    url = "http://gitlab.fei8s.com/tianchengZhang/dastaset-for-timeseries/-/raw/main/MD/swymz.csv"
-    file_path = "../MD/PHAR1.csv"
-    download(url,file_path)
+    pass
