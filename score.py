@@ -142,13 +142,6 @@ class Score():
         trues = []
         count = 0
 
-        # 保存每一次平移的prloss
-        d0_loss = []
-        d1_loss = []
-        d2_loss = []
-        df_loss = []
-        d96_loss = []
-
         folder_path = './results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
@@ -190,69 +183,14 @@ class Score():
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
 
-                test_pred_bf = outputs.detach().cpu().numpy().squeeze(axis=2)
-                test_true_bf = batch_y.detach().cpu().numpy().squeeze(axis=2)
-
                 outputs = outputs.detach().cpu().numpy()
                 batch_y = batch_y.detach().cpu().numpy()
 
                 pred = outputs  # outputs.detach().cpu().numpy()  # .squeeze()
                 true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
 
-                # 如果开启验证且预测点数大于240可以计算多天的详细指标
-                if self.args.do_d and self.args.pred_len > 240:
-                    for j in range(len(test_pred_bf)):
-
-                        test_pred = test_pred_bf[j]
-                        test_true = test_true_bf[j]
-
-                        # 获取详细天的数值
-                        d0_pred = test_pred[0:24]
-                        d0_true = test_true[0:24]
-
-                        d1_pred = test_pred[24:48]
-                        d1_true = test_true[24:48]
-
-                        d2_pred = test_pred[48:72]
-                        d2_true = test_true[48:72]
-
-                        df_pred = test_pred[-24:-1]
-                        df_true = test_true[-24:-1]
-
-                        # 计算详细天的指标
-                        pr0, _, _ = metric(d0_pred, d0_true)
-                        pr1, _, _ = metric(d1_pred, d1_true)
-                        pr2, _, _ = metric(d2_pred, d2_true)
-                        prf, _, _ = metric(df_pred, df_true)
-
-                        d0_loss.append(pr0)
-                        d1_loss.append(pr1)
-                        d2_loss.append(pr2)
-                        df_loss.append(prf)
-
-                # 针对96的D指标，只进行一次计算，即全部的数据
-                if self.args.do_d and self.args.pred_len < 200:
-                    for j in range(len(test_pred_bf)):
-
-                        test_pred = test_pred_bf[j]
-                        test_true = test_true_bf[j]
-
-                        # 计算详细天的指标
-                        pr96, _, _ = metric(test_pred, test_true)
-
-                        d96_loss.append(pr96)
-
                 preds.append(pred)
                 trues.append(true)
-
-                # 选择两端的进行绘制
-                # if i % 2 == 0:
-                #     if count == self.args.draw_num:
-                #         input = batch_x.detach().cpu().numpy()
-                #         gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-                #         pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                #         visual(gt, pd, os.path.join(folder_path, "test" + '.pdf'))
-                #     count = count + 1
 
                 if i % 2 == 0:
                     input = batch_x.detach().cpu().numpy()
@@ -265,15 +203,6 @@ class Score():
 
         preds = np.concatenate(preds, axis=0)
         trues = np.concatenate(trues, axis=0)
-
-        if self.args.do_d and self.args.pred_len > 240:
-            visual_pr(d0_loss, os.path.join(folder_path, 'd0_loss.pdf'))
-            visual_pr(d1_loss, os.path.join(folder_path, 'd1_loss.pdf'))
-            visual_pr(d2_loss, os.path.join(folder_path, 'd2_loss.pdf'))
-            visual_pr(df_loss, os.path.join(folder_path, 'df_loss.pdf'))
-
-        if self.args.do_d and self.args.pred_len < 200:
-            visual_pr(d96_loss, os.path.join(folder_path, 'd96_loss.pdf'))
 
         mae, mse, rmse = metric(preds, trues)
         metric_str = 'mae:{}, mse:{}, rmse:{}'.format(mae, mse, rmse)
@@ -464,9 +393,7 @@ class Score():
 
         return
 
-    # 绘制预测效果图
     def draw(self, setting):
-        # 读取预测结果
         path = './results/' + setting + '/'
         pred_path = './results/' + setting + '/' + 'real_prediction.npy'
         pred = np.load(pred_path)
@@ -485,66 +412,6 @@ class Score():
         gt = df_raw
         pr = np.concatenate((input, pred[0]), axis=0)
         visual(gt, pr, os.path.join(path, "pred" + '.pdf'))
-
-    def D1_predict(self, setting, load=False):
-        pred_data, pred_loader = self._get_data(flag='D1_pred')
-
-        if load:
-            path = os.path.join(self.args.checkpoints_path, setting)
-            best_model_path = path + '/' + 'checkpoint.pth'
-            self.model.load_state_dict(torch.load(best_model_path))
-
-        preds = []
-        pr_loss = []    #保存每一次平移的prloss
-
-        self.model.eval()
-        with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(pred_loader):
-                batch_x = batch_x.float().to(self.device)
-                batch_y = batch_y.float()
-                batch_x_mark = batch_x_mark.float().to(self.device)
-                batch_y_mark = batch_y_mark.float().to(self.device)
-
-                # decoder input
-                dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
-                dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-                # encoder - decoder
-                if self.args.use_amp:
-                    with torch.cuda.amp.autocast():
-                        if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                        else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                else:
-                    if self.args.output_attention:
-                        outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                    else:
-                        outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                pred = outputs.detach().cpu().numpy().squeeze(axis=2)
-                # 这边要进行验证
-                f_dim = -1 if self.args.features == 'MS' else 0
-                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                true = batch_y.detach().cpu().numpy().squeeze(axis=2)
-                # 这边如果把预测长度 提升了 应该是只取后一半即可
-                pred = pred[len(pred)/2:-1]
-                true = true[len(pred)/2:-1]
-                pr, _, _ = metric(pred, true)
-                pr_loss.append(pr)
-                pred = pred_data.inverse_transform(pred)
-                preds.append(pred[0])
-
-        preds = np.array(preds)
-
-        # result save
-        folder_path = './results/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-
-        np.save(folder_path + 'real_prediction.npy', preds)
-        # pr_loss = pr_loss.detach().cpu().numpy().squeeze()
-        visual_pr(pr_loss, os.path.join(folder_path,'pr_loss.pdf'))
-        return
-
 
 
 if __name__ == "__main__" :

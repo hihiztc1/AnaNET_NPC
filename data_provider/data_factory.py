@@ -4,9 +4,9 @@ from data_provider.data_loader import Dataset_Pred, D0_Dataset_Pred, Dataset_ETT
 
 data_dict = {
     'MD': Dataset_Electricity,
-    'app': Dataset_Electricity,
+    'ECL': Dataset_Electricity,
     'ETTm': Dataset_ETT_minute,
-    'ETTh': Dataset_ETT_hour,
+
 }
 
 

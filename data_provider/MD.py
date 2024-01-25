@@ -9,9 +9,6 @@ from data_provider.data_loader import Dataset_Pred
 import warnings
 warnings.filterwarnings('ignore')
 
-DATASET_PATH = './Electricity/'
-SubDataset = ["MD_food, MD_phar, MD_manu"]
-URL_TEMPLATE = 'http://gitlab.fei8s.com/tianchengZhang/dastaset-for-timeseries/-/raw/main/Electricity/{}.csv'
 logging.basicConfig(level=logging.DEBUG)
 
 # Inherit dataset
@@ -44,9 +41,6 @@ class Dataset_Electricity(Dataset):
         # self.scaler = MinMaxScaler()
         self.scaler = StandardScaler()
         file_path = os.path.join(self.dataset_path, self.data_path + '.csv')
-        print(file_path)
-        if not os.path.isfile(file_path):
-            self.download(self.data_path, self.dataset_path)
         df_raw = pd.read_csv(file_path)
 
         # Reorder columns [date, ...features..., target]
@@ -114,29 +108,6 @@ class Dataset_Electricity(Dataset):
     def inverse_transform(self, data):
         return self.scaler.inverse_transform(data)
 
-    @staticmethod
-    def download(subdataset, dataset_path=DATASET_PATH):
-        """Download Electricity dataset if doesn't exist.
-
-           Args:
-                dataset_path(str): The path where the downloaded dataset is stored
-                subdataset(str): The subdataset to be downloaded
-        """
-        if not os.path.isdir(dataset_path):
-            os.makedirs(dataset_path)
-            logging.info(f' {dataset_path} does not exist, creation successful.')
-        if subdataset not in SubDataset:
-            raise('数据集暂不提供在线下载，请直接存放本地')
-        else:
-            URL = URL_TEMPLATE.format(subdataset)
-            data_path = subdataset + ".csv"
-            FILE_PATH = os.path.join(dataset_path, data_path)
-
-            download(URL, FILE_PATH)
-
-        return data_path, dataset_path
-
-
 def data_provider_electricity(args, flag):
     """
     Provide Electricity data. list:["MD_food, MD_phar, MD_manu"]
@@ -180,5 +151,5 @@ def data_provider_electricity(args, flag):
     return data_set, data_loader
 
 if __name__ == '__main__':
-    # Download a specific subset of data separately
-    Dataset_Electricity.download(DATASET_PATH, 'htk1_YC0013_h1.csv')
+    pass
+
