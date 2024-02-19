@@ -10,12 +10,9 @@ from torch.optim import lr_scheduler
 # import logging
 # logging.basicConfig(level=logging.INFO)
 from models import AnaNET
-## If adding a custom dataset, please import it in the file
-from data_provider.MD import Dataset_Electricity
 
-## If adding a custom model, please import it in the file
 from utils.metrics import metric
-from utils.tools import EarlyStopping, adjust_learning_rate, visual, visual_pr
+from utils.tools import EarlyStopping, adjust_learning_rate, visual
 
 
 class Score():
@@ -200,7 +197,6 @@ class Score():
                     count = count + 1
 
 
-
         preds = np.concatenate(preds, axis=0)
         trues = np.concatenate(trues, axis=0)
 
@@ -237,7 +233,6 @@ class Score():
 
         model_optim = self._select_optimizer()
         criterion = self._select_criterion()
-
 
 
         if self.args.use_amp:
