@@ -8,7 +8,7 @@ This repo is the official Pytorch implementation of AnaNET.
 First, please make sure you have installed Conda. Then, our environment can be installed by:
 ```
 conda env create -f environment.yml
-conda activate 
+conda activate AnaNET
 ```
 
 ### Data Preparation
