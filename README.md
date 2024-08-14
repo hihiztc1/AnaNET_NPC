@@ -17,13 +17,13 @@ We provide the AggTS dataset used in the experiments in the `./dataset` director
 
 
 ### Training Example
-- In `scripts/ `, we offer scripts for training datasets related to *MD* and *ETT*.
+- In `scripts/ `, we offer scripts for training datasets related to *DCP* and *ETT*.
 
 For example:
 
-To train the **AnaNET** on **MD dataset**, you can use the scipt `scripts/run_MD.sh`:
+To train the **AnaNET** on **MD dataset**, you can use the scipt `scripts/run_DCP.sh`:
 ```
-sh scripts/run_MD.sh
+sh scripts/run_DCP.sh
 ```
 
 ## Acknowledgment
