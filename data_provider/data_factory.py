@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from data_provider.data_loader import Dataset_Pred, D0_Dataset_Pred, Dataset_ETT_minute, Dataset_ETT_hour
 
 data_dict = {
-    'MD': Dataset_Electricity,
+    'DCP': Dataset_Electricity,
     'ECL': Dataset_Electricity,
     'ETTm': Dataset_ETT_minute,
 

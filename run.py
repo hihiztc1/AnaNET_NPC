@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore")
 
 def main():
     # Different datasets
-    MD_SubDataset = ['MD_manu', 'MD_food', 'MD_phar']
+    DCP_SubDataset = ['DCP_A', 'DCP_B', 'DCP_C']
     ETTm_SubDataset = ['ETTm_MIX.csv']
 
 
@@ -25,7 +25,7 @@ def main():
     parser = argparse.ArgumentParser(description='AnaNET: Anatomical Network')
 
     ## Select the dataset to train
-    parser.add_argument('--dataset_class', type=str, default='MD', help='Data class for evaluation')
+    parser.add_argument('--dataset_class', type=str, default='DCP', help='Data class for evaluation')
     parser.add_argument('--root_path', type=str, default='./dataset/', help='root path of the data file')
 
     ## Define the model to be used here:
