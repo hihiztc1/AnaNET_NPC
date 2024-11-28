@@ -7,7 +7,7 @@ do
   python -u run.py \
     --is_training 1 \
     --root_path ./dataset/ \
-    --dataset_class 'MD' \
+    --dataset_class 'DCP' \
     --model AnaNET \
     --features S \
     --seq_len $preLen \
